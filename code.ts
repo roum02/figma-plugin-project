@@ -15,15 +15,21 @@ figma.ui.onmessage = async (msg) => {
     };
     const effectiveToken = __FIGMA_TOKEN__ || "";
     try {
-      const [nodesRes] = await Promise.all([
+      const [nodesRes, imagesRes] = await Promise.all([
         getNodes({ token: effectiveToken, fileKey, ids }),
-        // getLocalVariables({ token: effectiveToken, fileKey }),
+        getRenderedImages({
+          token: effectiveToken,
+          fileKey,
+          ids,
+          format: "png",
+          scale: 2,
+        }),
       ]);
       figma.ui.postMessage({
         type: "poc-result",
         ok: true,
         nodes: nodesRes,
-        // variables: varsRes,
+        images: imagesRes,
       });
     } catch (err) {
       figma.ui.postMessage({

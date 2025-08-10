@@ -36,6 +36,11 @@
         <button id="poc">Fetch</button>
       </div>
       <div id="status" class="status">Ready</div>
+      <div class="col">Preview</div>
+      <div
+        id="preview"
+        style="position: relative; margin-top: 8px; border: 1px solid #eee"
+      ></div>
     </div>
 
     <script>
@@ -48,9 +53,25 @@
 
         if (msg.type === "poc-result") {
           if (msg.ok) {
-            statusEl.textContent = "Fetched nodes + variables (see console)";
-            console.log("nodes", msg.nodes);
-            console.log("variables", msg.variables);
+            const nodesRes = msg.nodes;
+            console.log("nodes", nodesRes);
+
+            // Build minimal HTML from Figma nodes
+            try {
+              const idList = Object.keys(nodesRes.nodes || {});
+              const first = idList[0];
+              if (first) {
+                const doc = nodesRes.nodes[first].document;
+                const html = buildHtmlFromNode(doc);
+                document.getElementById("preview").innerHTML = html;
+                statusEl.textContent = html;
+              } else {
+                statusEl.textContent = "No nodes found in response";
+              }
+            } catch (e) {
+              console.error(e);
+              statusEl.textContent = "Failed to build HTML";
+            }
           } else {
             console.error("Fetch failed: " + msg.error);
             statusEl.textContent = "Fetch failed: " + msg.error;
@@ -101,6 +122,119 @@
           "*"
         );
       };
+
+      // --- Rendering helpers ---
+      function buildHtmlFromNode(root) {
+        const ab = root.absoluteBoundingBox || {
+          x: 0,
+          y: 0,
+          width: 0,
+          height: 0,
+        };
+        const rootX = ab.x || 0;
+        const rootY = ab.y || 0;
+        const width = Math.round(ab.width || 0);
+        const height = Math.round(ab.height || 0);
+        const bg = cssBackgroundFromFills(root.fills);
+        const radius = cssBorderRadius(root);
+        const childrenHtml = (root.children || [])
+          .map((n) => renderNode(n, rootX, rootY))
+          .join("");
+        return `<div style="position:relative;width:${width}px;height:${height}px;${bg}${radius}">${childrenHtml}</div>`;
+      }
+
+      function renderNode(node, rootX, rootY) {
+        const ab = node.absoluteBoundingBox || {};
+        const left = Math.round((ab.x || 0) - rootX);
+        const top = Math.round((ab.y || 0) - rootY);
+        const width = Math.round(ab.width || 0);
+        const height = Math.round(ab.height || 0);
+        const basePos = `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;`;
+        const radius = cssBorderRadius(node);
+
+        switch (node.type) {
+          case "RECTANGLE":
+          case "FRAME":
+          case "GROUP": {
+            const bg = cssBackgroundFromFills(node.fills);
+            const children = (node.children || [])
+              .map((n) => renderNode(n, rootX, rootY))
+              .join("");
+            return `<div style="${basePos}${bg}${radius}">${children}</div>`;
+          }
+          case "TEXT": {
+            const styles = cssTextStyles(node.style || {}, node.fills);
+            const text = escapeHtml(node.characters || "");
+            return `<div style="${basePos}${styles}${radius}">${text}</div>`;
+          }
+          default: {
+            // Fallback: render container for unknown types to preserve layout
+            const children = (node.children || [])
+              .map((n) => renderNode(n, rootX, rootY))
+              .join("");
+            return `<div style="${basePos}${radius}">${children}</div>`;
+          }
+        }
+      }
+
+      function cssBackgroundFromFills(fills) {
+        if (!Array.isArray(fills)) return "";
+        const solid = fills.find(
+          (p) => p && p.type === "SOLID" && p.visible !== false
+        );
+        if (!solid || !solid.color) return "";
+        const c = solid.color; // r,g,b in 0..1
+        const a = solid.opacity != null ? solid.opacity : 1;
+        const r = Math.round((c.r || 0) * 255);
+        const g = Math.round((c.g || 0) * 255);
+        const b = Math.round((c.b || 0) * 255);
+        return `background: rgba(${r}, ${g}, ${b}, ${a});`;
+      }
+
+      function cssTextStyles(style, fills) {
+        const color = cssBackgroundFromFills(fills).replace(
+          "background:",
+          "color:"
+        );
+        const fontFamily = style.fontFamily
+          ? `font-family:${style.fontFamily};`
+          : "";
+        const fontSize = style.fontSize
+          ? `font-size:${Math.round(style.fontSize)}px;`
+          : "";
+        const fontWeight = style.fontWeight
+          ? `font-weight:${style.fontWeight};`
+          : "";
+        const lineHeight = style.lineHeightPx
+          ? `line-height:${Math.round(style.lineHeightPx)}px;`
+          : "";
+        const letter = style.letterSpacing
+          ? `letter-spacing:${style.letterSpacing}px;`
+          : "";
+        const alignMap = {
+          LEFT: "left",
+          RIGHT: "right",
+          CENTER: "center",
+          JUSTIFIED: "justify",
+        };
+        const align = style.textAlignHorizontal
+          ? `text-align:${alignMap[style.textAlignHorizontal] || "left"};`
+          : "";
+        return `${color}${fontFamily}${fontSize}${fontWeight}${lineHeight}${letter}${align}white-space:pre-wrap;`;
+      }
+
+      function cssBorderRadius(node) {
+        const r = node.cornerRadius;
+        if (typeof r === "number") return `border-radius:${Math.round(r)}px;`;
+        return "";
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
     </script>
   </body>
 </html>
