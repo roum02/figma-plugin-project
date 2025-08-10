@@ -1,0 +1,16 @@
+{
+  "name": "figma-plugin-project",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Minimal TypeScript-powered Figma plugin scaffold",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "esbuild code.ts --bundle --outfile=code.js --platform=browser --target=es2017",
+    "watch": "esbuild code.ts --bundle --outfile=code.js --platform=browser --target=es2017 --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.85.0",
+    "typescript": "^5.5.4",
+    "esbuild": "^0.23.0"
+  }
+}

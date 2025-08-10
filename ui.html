@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Figma Plugin UI</title>
+    <style>
+      body {
+        font: 12px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+        margin: 0;
+      }
+
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      input[type="text"],
+      input[type="password"] {
+        width: 100%;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="col">
+        <label>PoC fetch (nodes + variables)</label>
+        <input id="token" type="password" placeholder="X-FIGMA-TOKEN" />
+        <input
+          id="fileKey"
+          type="text"
+          placeholder="fileKey (e.g. WDN2DK6K...)"
+        />
+        <input
+          id="ids"
+          type="text"
+          placeholder="nodeIds comma-separated (e.g. 11293:31412,1:2)"
+        />
+        <button id="poc">Fetch</button>
+      </div>
+      <div id="status" class="status">Ready</div>
+    </div>
+
+    <script>
+      const tokenEl = document.getElementById("token");
+      const fileKeyEl = document.getElementById("fileKey");
+      const idsEl = document.getElementById("ids");
+      const statusEl = document.getElementById("status");
+
+      window.onmessage = (event) => {
+        const msg = event.data.pluginMessage;
+        if (!msg) return;
+
+        if (msg.type === "poc-result") {
+          if (msg.ok) {
+            statusEl.textContent = "Fetched nodes + variables (see console)";
+            console.log("nodes", msg.nodes);
+            console.log("variables", msg.variables);
+          } else {
+            statusEl.textContent = "Fetch failed: " + msg.error;
+          }
+        }
+      };
+
+      document.getElementById("poc").onclick = () => {
+        const token = tokenEl.value.trim();
+        const fileKey = fileKeyEl.value.trim();
+        const ids = idsEl.value.trim();
+        if (!token || !fileKey || !ids) {
+          statusEl.textContent = "Enter token, fileKey, and node ids";
+          return;
+        }
+        const idsArr = ids
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        statusEl.textContent = "Fetching...";
+        parent.postMessage(
+          { pluginMessage: { type: "poc-fetch", token, fileKey, ids: idsArr } },
+          "*"
+        );
+      };
+    </script>
+  </body>
+</html>
