@@ -201,43 +201,151 @@ Ready
         const height = Math.round(ab.height || 0);
         const bg = cssBackgroundFromFills(root.fills);
         const radius = cssBorderRadius(root);
+        const auto = isAutoLayout(root);
+        const layout = auto ? containerFlexStyles(root) : `position:relative;`;
+        const size = `width:${width}px;height:${height}px;`;
         const childrenHtml = (root.children || [])
-          .map((n) => renderNode(n, rootX, rootY))
+          .map((n) => renderNode(n, rootX, rootY, auto))
           .join("");
-        return `<div style="position:relative;width:${width}px;height:${height}px;${bg}${radius}">${childrenHtml}</div>`;
+        return `<div style="${layout}${size}${bg}${radius}">${childrenHtml}</div>`;
       }
 
-      function renderNode(node, rootX, rootY) {
+      function renderNode(node, rootX, rootY, parentIsAuto) {
         const ab = node.absoluteBoundingBox || {};
-        const left = Math.round((ab.x || 0) - rootX);
-        const top = Math.round((ab.y || 0) - rootY);
         const width = Math.round(ab.width || 0);
         const height = Math.round(ab.height || 0);
-        const basePos = `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;`;
         const radius = cssBorderRadius(node);
+        const bg = cssBackgroundFromFills(node.fills);
+
+        // If parent uses auto layout, let flex do layout; otherwise absolute position
+        let positionStyles = "";
+        if (parentIsAuto) {
+          positionStyles = childFlexItemStyles(node, width, height);
+        } else {
+          const left = Math.round((ab.x || 0) - rootX);
+          const top = Math.round((ab.y || 0) - rootY);
+          positionStyles = `position:absolute;left:${left}px;top:${top}px;width:${width}px;height:${height}px;`;
+        }
+
+        // If this node itself is auto layout, render container as flex
+        const thisIsAuto = isAutoLayout(node);
+        const containerStyles = thisIsAuto
+          ? `${containerFlexStyles(node)}${bg}${radius}`
+          : `${positionStyles}${bg}${radius}`;
 
         switch (node.type) {
           case "RECTANGLE":
-          case "FRAME":
           case "GROUP": {
-            const bg = cssBackgroundFromFills(node.fills);
             const children = (node.children || [])
-              .map((n) => renderNode(n, rootX, rootY))
+              .map((n) => renderNode(n, rootX, rootY, thisIsAuto))
               .join("");
-            return `<div style="${basePos}${bg}${radius}">${children}</div>`;
+            const size =
+              parentIsAuto && !thisIsAuto
+                ? ``
+                : `width:${width}px;height:${height}px;`;
+            return `<div style="${containerStyles}${size}">${children}</div>`;
+          }
+          case "FRAME": {
+            const children = (node.children || [])
+              .map((n) => renderNode(n, rootX, rootY, thisIsAuto))
+              .join("");
+            const size =
+              parentIsAuto && !thisIsAuto
+                ? ``
+                : `width:${width}px;height:${height}px;`;
+            return `<div style="${containerStyles}${size}">${children}</div>`;
           }
           case "TEXT": {
             const styles = cssTextStyles(node.style || {}, node.fills);
             const text = escapeHtml(node.characters || "");
-            return `<div style="${basePos}${styles}${radius}">${text}</div>`;
+            const size = parentIsAuto
+              ? ``
+              : `width:${width}px;height:${height}px;`;
+            return `<div style="${positionStyles}${styles}${radius}${size}">${text}</div>`;
           }
           default: {
-            // Fallback: render container for unknown types to preserve layout
             const children = (node.children || [])
-              .map((n) => renderNode(n, rootX, rootY))
+              .map((n) => renderNode(n, rootX, rootY, thisIsAuto))
               .join("");
-            return `<div style="${basePos}${radius}">${children}</div>`;
+            const size =
+              parentIsAuto && !thisIsAuto
+                ? ``
+                : `width:${width}px;height:${height}px;`;
+            return `<div style="${containerStyles}${size}">${children}</div>`;
           }
+        }
+      }
+
+      function isAutoLayout(node) {
+        return (
+          !!node &&
+          (node.layoutMode === "HORIZONTAL" || node.layoutMode === "VERTICAL")
+        );
+      }
+
+      function containerFlexStyles(node) {
+        const dir = node.layoutMode === "HORIZONTAL" ? "row" : "column";
+        const justify = mapPrimaryAxisAlign(node.primaryAxisAlignItems);
+        const align = mapCounterAxisAlign(node.counterAxisAlignItems);
+        const gap =
+          node.itemSpacing != null
+            ? `gap:${Math.round(node.itemSpacing)}px;`
+            : "";
+        const padTop =
+          node.paddingTop != null ? Math.round(node.paddingTop) : 0;
+        const padRight =
+          node.paddingRight != null ? Math.round(node.paddingRight) : 0;
+        const padBottom =
+          node.paddingBottom != null ? Math.round(node.paddingBottom) : 0;
+        const padLeft =
+          node.paddingLeft != null ? Math.round(node.paddingLeft) : 0;
+        const padding =
+          padTop || padRight || padBottom || padLeft
+            ? `padding:${padTop}px ${padRight}px ${padBottom}px ${padLeft}px;`
+            : "";
+        return `display:flex;flex-direction:${dir};justify-content:${justify};align-items:${align};${gap}${padding}`;
+      }
+
+      function childFlexItemStyles(node, width, height) {
+        let styles = "";
+        if (node.layoutGrow === 1) {
+          styles += "flex-grow:1;flex-basis:auto;";
+        } else {
+          // Keep fixed size when provided
+          if (width) styles += `width:${width}px;`;
+          if (height) styles += `height:${height}px;`;
+        }
+        if (node.layoutAlign === "STRETCH") {
+          styles += "align-self:stretch;";
+        }
+        return styles;
+      }
+
+      function mapPrimaryAxisAlign(v) {
+        switch (v) {
+          case "MIN":
+            return "flex-start";
+          case "CENTER":
+            return "center";
+          case "MAX":
+            return "flex-end";
+          case "SPACE_BETWEEN":
+            return "space-between";
+          default:
+            return "flex-start";
+        }
+      }
+
+      function mapCounterAxisAlign(v) {
+        switch (v) {
+          case "MIN":
+            return "flex-start";
+          case "CENTER":
+            return "center";
+          case "MAX":
+            return "flex-end";
+          default:
+            return "stretch";
         }
       }
 
