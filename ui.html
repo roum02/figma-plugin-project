@@ -236,23 +236,37 @@ Ready
         switch (node.type) {
           case "RECTANGLE":
           case "GROUP": {
-            const children = (node.children || [])
+            const childNodes = node.children || [];
+            const children = childNodes
               .map((n) => renderNode(n, rootX, rootY, thisIsAuto))
               .join("");
+            const isTextOnlyChild =
+              childNodes.length === 1 && childNodes[0]?.type === "TEXT";
             const size =
               parentIsAuto && !thisIsAuto
                 ? ``
-                : `width:${width}px;height:${height}px;`;
+                : `${
+                    isTextOnlyChild
+                      ? `min-width:${width}px;`
+                      : `width:${width}px;`
+                  }height:${height}px;`;
             return `<div style="${containerStyles}${size}">${children}</div>`;
           }
           case "FRAME": {
-            const children = (node.children || [])
+            const childNodes = node.children || [];
+            const children = childNodes
               .map((n) => renderNode(n, rootX, rootY, thisIsAuto))
               .join("");
+            const isTextOnlyChild =
+              childNodes.length === 1 && childNodes[0]?.type === "TEXT";
             const size =
               parentIsAuto && !thisIsAuto
                 ? ``
-                : `width:${width}px;height:${height}px;`;
+                : `${
+                    isTextOnlyChild
+                      ? `min-width:${width}px;`
+                      : `width:${width}px;`
+                  }height:${height}px;`;
             return `<div style="${containerStyles}${size}">${children}</div>`;
           }
           case "TEXT": {
@@ -281,13 +295,20 @@ Ready
             return `<span style="display:inline-block;${textPos}${flexItem}${styles}${nowrap}${radius}${size}">${text}</span>`;
           }
           default: {
-            const children = (node.children || [])
+            const childNodes = node.children || [];
+            const children = childNodes
               .map((n) => renderNode(n, rootX, rootY, thisIsAuto))
               .join("");
+            const isTextOnlyChild =
+              childNodes.length === 1 && childNodes[0]?.type === "TEXT";
             const size =
               parentIsAuto && !thisIsAuto
                 ? ``
-                : `width:${width}px;height:${height}px;`;
+                : `${
+                    isTextOnlyChild
+                      ? `min-width:${width}px;`
+                      : `width:${width}px;`
+                  }height:${height}px;`;
             return `<div style="${containerStyles}${size}">${children}</div>`;
           }
         }
