@@ -1,10 +1,9 @@
 import { httpRequest } from "./http";
 import type {
-  FigmaGetNodesResponse,
-  FigmaGetLocalVariablesResponse,
-  FigmaGetFileImagesResponse,
-  FigmaGetImagesResponse,
-} from "../types/figma";
+  GetFileNodesResponse,
+  GetLocalVariablesResponse,
+  GetImagesResponse,
+} from "@figma/rest-api-spec";
 
 const V1 = "v1";
 
@@ -14,8 +13,8 @@ export async function getNodes(params: {
   ids: string[];
   depth?: number;
   geometry?: "paths";
-}): Promise<FigmaGetNodesResponse> {
-  return httpRequest<FigmaGetNodesResponse>({
+}): Promise<GetFileNodesResponse> {
+  return httpRequest<GetFileNodesResponse>({
     token: params.token,
     path: `${V1}/files/${params.fileKey}/nodes`,
     query: {
@@ -29,8 +28,8 @@ export async function getNodes(params: {
 export async function getLocalVariables(params: {
   token: string;
   fileKey: string;
-}): Promise<FigmaGetLocalVariablesResponse> {
-  return httpRequest<FigmaGetLocalVariablesResponse>({
+}): Promise<GetLocalVariablesResponse> {
+  return httpRequest<GetLocalVariablesResponse>({
     token: params.token,
     path: `${V1}/files/${params.fileKey}/variables/local`,
   });
@@ -39,8 +38,8 @@ export async function getLocalVariables(params: {
 export async function getFileImages(params: {
   token: string;
   fileKey: string;
-}): Promise<FigmaGetFileImagesResponse> {
-  return httpRequest<FigmaGetFileImagesResponse>({
+}): Promise<GetImagesResponse> {
+  return httpRequest<GetImagesResponse>({
     token: params.token,
     path: `${V1}/files/${params.fileKey}/images`,
   });
@@ -54,8 +53,8 @@ export async function getRenderedImages(params: {
   format?: "jpg" | "png" | "svg" | "pdf";
   use_absolute_bounds?: boolean;
   version?: string;
-}): Promise<FigmaGetImagesResponse> {
-  return httpRequest<FigmaGetImagesResponse>({
+}): Promise<GetImagesResponse> {
+  return httpRequest<GetImagesResponse>({
     token: params.token,
     path: `${V1}/images/${params.fileKey}`,
     query: {
