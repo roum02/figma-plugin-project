@@ -28,7 +28,6 @@
     <div class="container">
       <div class="col">
         <label>PoC fetch (nodes + variables)</label>
-        <input id="token" type="password" placeholder="X-FIGMA-TOKEN" />
         <input
           id="fileKey"
           type="text"
@@ -45,7 +44,6 @@
     </div>
 
     <script>
-      const tokenEl = document.getElementById("token");
       const fileKeyEl = document.getElementById("fileKey");
       const idsEl = document.getElementById("ids");
       const statusEl = document.getElementById("status");
@@ -66,11 +64,10 @@
       };
 
       document.getElementById("poc").onclick = () => {
-        const token = tokenEl.value.trim();
         const fileKey = fileKeyEl.value.trim();
         const ids = idsEl.value.trim();
-        if (!token || !fileKey || !ids) {
-          statusEl.textContent = "Enter token, fileKey, and node ids";
+        if (!fileKey || !ids) {
+          statusEl.textContent = "Enter fileKey and node ids";
           return;
         }
         const idsArr = ids
@@ -79,7 +76,7 @@
           .filter(Boolean);
         statusEl.textContent = "Fetching...";
         parent.postMessage(
-          { pluginMessage: { type: "poc-fetch", token, fileKey, ids: idsArr } },
+          { pluginMessage: { type: "poc-fetch", fileKey, ids: idsArr } },
           "*"
         );
       };

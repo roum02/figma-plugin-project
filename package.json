@@ -5,12 +5,13 @@
   "description": "Minimal TypeScript-powered Figma plugin scaffold",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "build": "esbuild code.ts --bundle --outfile=code.js --platform=browser --target=es2017",
-    "watch": "esbuild code.ts --bundle --outfile=code.js --platform=browser --target=es2017 --watch"
+    "build": "dotenv -e .env -- node build.js",
+    "watch": "dotenv -e .env -- node build.js --watch"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.85.0",
     "@figma/rest-api-spec": "^0.33.0",
+    "dotenv-cli": "^7.4.4",
     "esbuild": "^0.23.0",
     "typescript": "^5.5.4"
   }

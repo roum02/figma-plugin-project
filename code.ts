@@ -1,20 +1,23 @@
 import { getNodes, getLocalVariables, getRenderedImages } from "./api/figma";
 
+// Build-time injected constant
+declare const __FIGMA_TOKEN__: string;
+
 // Show the plugin UI
 figma.showUI(__html__, { width: 360, height: 300 });
 
 // Handle messages from UI
 figma.ui.onmessage = async (msg) => {
   if (msg.type === "poc-fetch") {
-    const { token, fileKey, ids } = msg as {
-      token: string;
+    const { fileKey, ids } = msg as {
       fileKey: string;
       ids: string[];
     };
+    const effectiveToken = __FIGMA_TOKEN__ || "";
     try {
       const [nodesRes, varsRes] = await Promise.all([
-        getNodes({ token, fileKey, ids }),
-        getLocalVariables({ token, fileKey }),
+        getNodes({ token: effectiveToken, fileKey, ids }),
+        getLocalVariables({ token: effectiveToken, fileKey }),
       ]);
       figma.ui.postMessage({
         type: "poc-result",
