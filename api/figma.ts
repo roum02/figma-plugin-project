@@ -25,15 +25,15 @@ export async function getNodes(params: {
   });
 }
 
-export async function getLocalVariables(params: {
-  token: string;
-  fileKey: string;
-}): Promise<GetLocalVariablesResponse> {
-  return httpRequest<GetLocalVariablesResponse>({
-    token: params.token,
-    path: `${V1}/files/${params.fileKey}/variables/local`,
-  });
-}
+// export async function getLocalVariables(params: {
+//   token: string;
+//   fileKey: string;
+// }): Promise<GetLocalVariablesResponse> {
+//   return httpRequest<GetLocalVariablesResponse>({
+//     token: params.token,
+//     path: `${V1}/files/${params.fileKey}/variables/local`,
+//   });
+// }
 
 export async function getFileImages(params: {
   token: string;

@@ -1,4 +1,4 @@
-import { getNodes, getLocalVariables, getRenderedImages } from "./api/figma";
+import { getNodes, getRenderedImages } from "./api/figma";
 
 // Build-time injected constant
 declare const __FIGMA_TOKEN__: string;
@@ -15,15 +15,15 @@ figma.ui.onmessage = async (msg) => {
     };
     const effectiveToken = __FIGMA_TOKEN__ || "";
     try {
-      const [nodesRes, varsRes] = await Promise.all([
+      const [nodesRes] = await Promise.all([
         getNodes({ token: effectiveToken, fileKey, ids }),
-        getLocalVariables({ token: effectiveToken, fileKey }),
+        // getLocalVariables({ token: effectiveToken, fileKey }),
       ]);
       figma.ui.postMessage({
         type: "poc-result",
         ok: true,
         nodes: nodesRes,
-        variables: varsRes,
+        // variables: varsRes,
       });
     } catch (err) {
       figma.ui.postMessage({

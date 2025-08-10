@@ -12,14 +12,17 @@ function buildUrl(
   path: string,
   query?: HttpRequestOptions["query"]
 ): string {
-  const url = new URL(path, baseUrl);
-  if (query) {
-    Object.entries(query).forEach(([key, value]) => {
-      if (value === undefined) return;
-      url.searchParams.set(key, String(value));
-    });
-  }
-  return url.toString();
+  const base = baseUrl.replace(/\/+$/, "");
+  const p = path.replace(/^\/+/, "");
+  const url = `${base}/${p}`;
+  if (!query) return url;
+  const qs = Object.entries(query)
+    .filter(([, v]) => v !== undefined)
+    .map(
+      ([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`
+    )
+    .join("&");
+  return qs ? `${url}?${qs}` : url;
 }
 
 export async function httpRequest<T = unknown>(

@@ -27,16 +27,11 @@
   <body>
     <div class="container">
       <div class="col">
-        <label>PoC fetch (nodes + variables)</label>
+        <label>Paste Figma URL (@https://www.figma.com/...)</label>
         <input
-          id="fileKey"
+          id="figmaUrl"
           type="text"
-          placeholder="fileKey (e.g. WDN2DK6K...)"
-        />
-        <input
-          id="ids"
-          type="text"
-          placeholder="nodeIds comma-separated (e.g. 11293:31412,1:2)"
+          placeholder="@https://www.figma.com/<file_type>/<file_key>/<name>?node-id=<id>"
         />
         <button id="poc">Fetch</button>
       </div>
@@ -44,8 +39,7 @@
     </div>
 
     <script>
-      const fileKeyEl = document.getElementById("fileKey");
-      const idsEl = document.getElementById("ids");
+      const urlEl = document.getElementById("figmaUrl");
       const statusEl = document.getElementById("status");
 
       window.onmessage = (event) => {
@@ -58,25 +52,52 @@
             console.log("nodes", msg.nodes);
             console.log("variables", msg.variables);
           } else {
+            console.error("Fetch failed: " + msg.error);
             statusEl.textContent = "Fetch failed: " + msg.error;
           }
         }
       };
 
       document.getElementById("poc").onclick = () => {
-        const fileKey = fileKeyEl.value.trim();
-        const ids = idsEl.value.trim();
-        if (!fileKey || !ids) {
-          statusEl.textContent = "Enter fileKey and node ids";
+        const raw = urlEl.value.trim();
+        if (!raw) {
+          statusEl.textContent = "Paste a Figma URL";
           return;
         }
-        const idsArr = ids
-          .split(",")
-          .map((s) => s.trim())
-          .filter(Boolean);
+        // Allow leading '@'
+        const cleaned = raw.startsWith("@") ? raw.slice(1) : raw;
+        let fileKey = "";
+        let nodeId = "";
+        try {
+          const u = new URL(cleaned);
+          if (!/\.figma\.com$/.test(u.hostname)) {
+            statusEl.textContent = "URL must be on figma.com";
+            return;
+          }
+          const parts = u.pathname.split("/").filter(Boolean);
+          // Expected: /design/<file_key>/<name> or /file/<file_key>/<name>
+          if (parts.length < 2) {
+            statusEl.textContent = "Invalid Figma URL format";
+            return;
+          }
+          fileKey = parts[1];
+          const qNodeId = u.searchParams.get("node-id");
+          if (!fileKey || !qNodeId) {
+            statusEl.textContent = "Missing file_key or node-id in URL";
+            return;
+          }
+          nodeId = qNodeId;
+
+          console.log("fileKey", fileKey);
+          console.log("nodeId", nodeId);
+        } catch (e) {
+          statusEl.textContent = "Invalid URL";
+          return;
+        }
+
         statusEl.textContent = "Fetching...";
         parent.postMessage(
-          { pluginMessage: { type: "poc-fetch", fileKey, ids: idsArr } },
+          { pluginMessage: { type: "poc-fetch", fileKey, ids: [nodeId] } },
           "*"
         );
       };
