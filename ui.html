@@ -35,7 +35,26 @@
         />
         <button id="poc">Fetch</button>
       </div>
-      <div id="status" class="status">Ready</div>
+      <div class="col">Code</div>
+      <div style="position: relative">
+        <button id="copyBtn" style="position: absolute; right: 0; top: -26px">
+          Copy
+        </button>
+        <pre
+          id="status"
+          class="status"
+          style="
+            white-space: pre-wrap;
+            overflow: auto;
+            padding: 8px;
+            background: #f7f7f7;
+            border: 1px solid #eee;
+            border-radius: 4px;
+          "
+        >
+Ready
+        </pre>
+      </div>
       <div class="col">Preview</div>
       <div
         id="preview"
@@ -43,6 +62,8 @@
       ></div>
     </div>
 
+    <script src="https://unpkg.com/prettier@3.3.3/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@3.3.3/plugins/html.js"></script>
     <script>
       const urlEl = document.getElementById("figmaUrl");
       const statusEl = document.getElementById("status");
@@ -62,9 +83,17 @@
               const first = idList[0];
               if (first) {
                 const doc = nodesRes.nodes[first].document;
-                const html = buildHtmlFromNode(doc);
-                document.getElementById("preview").innerHTML = html;
-                statusEl.textContent = html;
+                const rawHtml = buildHtmlFromNode(doc);
+                const maybe = tryFormat(rawHtml);
+                const apply = (s) => {
+                  document.getElementById("preview").innerHTML = rawHtml;
+                  statusEl.textContent = s;
+                };
+                if (maybe && typeof maybe.then === "function") {
+                  maybe.then(apply).catch(() => apply(rawHtml));
+                } else {
+                  apply(maybe);
+                }
               } else {
                 statusEl.textContent = "No nodes found in response";
               }
@@ -122,6 +151,41 @@
           "*"
         );
       };
+
+      // Copy button
+      document.getElementById("copyBtn").onclick = async () => {
+        const text = statusEl.textContent || "";
+        try {
+          await navigator.clipboard.writeText(text);
+          statusEl.textContent = text + "\n\n// Copied to clipboard";
+        } catch {
+          // Fallback: select and prompt copy
+          const r = document.createRange();
+          r.selectNodeContents(statusEl);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(r);
+          statusEl.textContent = text + "\n\n// Press ⌘/Ctrl+C to copy";
+        }
+      };
+
+      // Prettier formatting via CDN (best-effort)
+      function tryFormat(src) {
+        try {
+          const p = window.prettier;
+          const plugins = window.prettierPlugins;
+          if (p && plugins && plugins.html) {
+            const plugin = plugins.html;
+            if (plugin && typeof plugin.then === "function") {
+              return plugin.then((mod) =>
+                p.format(src, { parser: "html", plugins: [mod] })
+              );
+            }
+            return p.format(src, { parser: "html", plugins: [plugin] });
+          }
+        } catch {}
+        return src;
+      }
 
       // --- Rendering helpers ---
       function buildHtmlFromNode(root) {

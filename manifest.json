@@ -13,7 +13,8 @@
       "https://api.figma.com",
       "https://www.gravatar.com",
       "https://s3-alpha.figma.com",
-      "https://s3-alpha-sig.figma.com"
+      "https://s3-alpha-sig.figma.com",
+      "https://unpkg.com"
     ]
   }
 }
