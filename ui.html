@@ -258,10 +258,27 @@ Ready
           case "TEXT": {
             const styles = cssTextStyles(node.style || {}, node.fills);
             const text = escapeHtml(node.characters || "");
+            // Build text-specific positioning to avoid forcing width that causes wrapping
+            let textPos = "";
+            let flexItem = "";
+            if (parentIsAuto) {
+              // In auto layout, let flex lay it out; prevent shrinking/wrapping
+              flexItem =
+                "flex-shrink:0;flex-basis:auto;" +
+                (node.layoutAlign === "STRETCH" ? "align-self:stretch;" : "");
+            } else {
+              const left = Math.round((ab.x || 0) - rootX);
+              const top = Math.round((ab.y || 0) - rootY);
+              textPos = `position:absolute;left:${left}px;top:${top}px;`;
+            }
             const size = parentIsAuto
-              ? ``
-              : `width:${width}px;height:${height}px;`;
-            return `<div style="${positionStyles}${styles}${radius}${size}">${text}</div>`;
+              ? height
+                ? `height:${height}px;`
+                : ""
+              : `min-width:${width}px;height:${height}px;`;
+            // Force single-line to avoid unexpected wraps when fonts differ
+            const nowrap = "white-space:nowrap;";
+            return `<span style="display:inline-block;${textPos}${flexItem}${styles}${nowrap}${radius}${size}">${text}</span>`;
           }
           default: {
             const children = (node.children || [])
