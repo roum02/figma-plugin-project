@@ -1,5 +1,9 @@
 ## Figma → 코드 재현을 위한 API 가이드
 
+### 분석
+
+- Plugin API 로 변경
+
 ### TL;DR (최소 셋)
 
 - `GET /v1/files/:key/nodes` 또는 `GET /v1/files/:key?ids=...`
