@@ -1,5 +1,10 @@
 ## Figma → 코드 재현을 위한 API 가이드
 
+### 피드백
+
+피그마 플러그인 api로 변경
+https://www.figma.com/plugin-docs/
+
 ### 분석
 
 - Plugin API 로 변경
